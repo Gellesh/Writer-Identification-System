@@ -6,7 +6,7 @@ def generateWritersFolders(dataBases):
     """ This function takes array of dataBases and generate writers folders """
 
     # read metaData of the writers
-    metaDataForm = "forms.txt" 
+    metaDataForm = "../forms.txt" 
     file = open(metaDataForm, "r")
     writer_dic = dict() 
     for line in file:
@@ -164,9 +164,9 @@ def GenerateTestCases(numTest = 1 , type = 1):
 # make writes directory 
 
 # dataBases = ["formsA-D"]
-# dataBases = ["formsA-D","formsE-H"]
-# generateWritersFolders(dataBases)
+#dataBases = ["../formsA-D","../formsE-H"]
+#generateWritersFolders(dataBases)
 
-# GenerateTestCases(5) # generate 5 test Cases    
+GenerateTestCases(50,0) # generate 5 test Cases    
 
 # deleteWriters(2)  # to delete writes having 1 img only
