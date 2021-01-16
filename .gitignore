@@ -1,3 +1,5 @@
 *.png
 TestCases
 Writers
+.vscode/settings.json
+*.pyc
