@@ -134,10 +134,11 @@ def train_using_svm(features,labels):
     clf.fit(features, labels)
     return clf
 
-def testing(clf,traingPicsPath,ids):
+def testing(clf,testImage,ids):
     trainF = []
     trainLabels = []
-    get_features(traingPicsPath,trainF,trainLabels,ids)
+    testPic = [testImage]
+    get_features(testPic,trainF,trainLabels,ids)
     trainF = np.array(trainF)
     trainLabels = np.array(trainLabels)
     y_pred = clf.predict(trainF)
