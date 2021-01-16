@@ -47,7 +47,7 @@ def preprocessing(gray_img):
     hist = cv.reduce(bin_img,1, cv.REDUCE_AVG).reshape(-1)
 #     for i in range(len(hist)):
 #         print(i, hist[i])
-    th = 2
+    th = 5
     H,W = bin_img.shape[:2]
     uppers = []
     lowers = []
@@ -73,7 +73,7 @@ def preprocessing(gray_img):
     temp_uppers = uppers.copy()
     temp_lowers = lowers.copy()
     for i in range(len(uppers)):
-        if lowers[i] - uppers[i] > 50:
+        if lowers[i] - uppers[i] > 30:
             lines.append(gray_img[uppers[i]:lowers[i], :])
             bin_lines.append(bin_img[uppers[i]:lowers[i], :])
         else:
@@ -83,7 +83,7 @@ def preprocessing(gray_img):
 #     print(temp_lowers)
 
     count = 1
-#     for l in bin_lines:
+#     for l in lines:
 #         cv.imwrite("line" + str(count) + ".png", l)
 #         count+=1
     
