@@ -7,7 +7,7 @@ import time
 from skimage import io, color
 from skimage.feature import local_binary_pattern
 from sklearn.preprocessing import minmax_scale
-from commonfunctions import show_images, showHist
+#from commonfunctions import show_images, showHist
 from sklearn import svm
 from sklearn import metrics
 from sklearn.naive_bayes import GaussianNB 
@@ -64,7 +64,7 @@ def preprocessing(gray_img):
     hist = cv.reduce(bin_img,1, cv.REDUCE_AVG).reshape(-1)
 #     for i in range(len(hist)):
 #         print(i, hist[i])
-    th = 2
+    th = 5
     H,W = bin_img.shape[:2]
     uppers = []
     lowers = []
@@ -90,7 +90,7 @@ def preprocessing(gray_img):
     temp_uppers = uppers.copy()
     temp_lowers = lowers.copy()
     for i in range(len(uppers)):
-        if lowers[i] - uppers[i] > 50:
+        if lowers[i] - uppers[i] > 30:
             lines.append(gray_img[uppers[i]:lowers[i], :])
             bin_lines.append(bin_img[uppers[i]:lowers[i], :])
         else:
@@ -301,7 +301,7 @@ if __name__ == "__main__":
     return_Labels = manager.dict()
     
     testCasesNum = 10
-    skip = 10
+    skip = 0
     totalAcc = 0
     totalTime = 0
     for i in range(1 + skip,testCasesNum + 1 + skip):
