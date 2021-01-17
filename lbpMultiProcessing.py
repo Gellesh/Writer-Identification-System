@@ -183,9 +183,9 @@ def testing(clf,testImage,ids):
     trainLabels = np.array(trainLabels)
     y_pred = clf.predict(trainF)
     print(y_pred)
-    # print("Most frequent value in the above array:") 
+    print("Most frequent value in the above array:") 
     print(np.bincount(y_pred).argmax())
-    # print("Accuracy:",metrics.accuracy_score(trainLabels, y_pred),"\n")
+    print("Accuracy:",metrics.accuracy_score(trainLabels, y_pred),"\n")
     return 1 if np.bincount(y_pred).argmax() == ids[0] else 0
 
 def runTests(num,return_features,return_Labels):
@@ -229,11 +229,29 @@ def runTests(num,return_features,return_Labels):
 
     #create data and train model
     #open 6 processes
+    #p0
+    f0 = []
+    l0 = []
     p0 = multiprocessing.Process(target=get_features, args=([pics[0]],f0,l0,[ids[0]],return_features,return_Labels ))
+    #p1
+    f1 = []
+    l1 = []
     p1 = multiprocessing.Process(target=get_features, args=([pics[1]],f1,l1,[ids[1]],return_features,return_Labels ))
+    #p2
+    f2 = []
+    l2 = []
     p2 = multiprocessing.Process(target=get_features, args=([pics[2]],f2,l2,[ids[2]],return_features,return_Labels ))
+    #p3
+    f3 = []
+    l3 = []
     p3 = multiprocessing.Process(target=get_features, args=([pics[3]],f3,l3,[ids[3]],return_features,return_Labels ))
+    #p4
+    f4 = []
+    l4 = []
     p4 = multiprocessing.Process(target=get_features, args=([pics[4]],f4,l4,[ids[4]],return_features,return_Labels ))
+    #p5
+    f5 = []
+    l5 = []
     p5 = multiprocessing.Process(target=get_features, args=([pics[5]],f5,l5,[ids[5]],return_features,return_Labels ))
     p0.start()
     p1.start()
@@ -257,7 +275,7 @@ def runTests(num,return_features,return_Labels):
     #get_features(pics,features,labels,ids)
     features = np.array(features)
     labels = np.array(labels)
-    # print(features.shape , labels.shape)
+    print(features.shape , labels.shape)
 
     # clf = train_using_svm(features,labels)
     # clf = naive_Bayes(features,labels)
@@ -280,7 +298,7 @@ if __name__ == "__main__":
     return_features = manager.list()
     return_Labels = manager.list()
     
-    testCasesNum = 1
+    testCasesNum = 2
     totalAcc = 0
     totalTime = 0
     for i in range(1,testCasesNum + 1):
