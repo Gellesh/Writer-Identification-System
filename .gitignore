@@ -1,4 +1,6 @@
 *.png
 TestCases
 Writers
+.vscode/settings.json
+*.pyc
 __pycache__/*

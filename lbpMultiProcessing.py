@@ -12,6 +12,7 @@ from sklearn import svm
 from sklearn import metrics
 from sklearn.naive_bayes import GaussianNB 
 from sklearn.neighbors import KNeighborsClassifier 
+import multiprocessing 
 
 counterww = 0
 
@@ -221,7 +222,46 @@ def runTests(num):
     start = time.time()
 
     #create data and train model
-    get_features(pics,features,labels,ids)
+    #open 6 processes
+    #p0
+    f0 = []
+    l0 = []
+    p0 = multiprocessing.Process(target=get_features, args=([pics[0]],f0,l0,[ids[0]], ))
+    #p1
+    f1 = []
+    l1 = []
+    p1 = multiprocessing.Process(target=get_features, args=([pics[1]],f1,l1,[ids[1]], ))
+    #p2
+    f2 = []
+    l2 = []
+    p2 = multiprocessing.Process(target=get_features, args=([pics[2]],f2,l2,[ids[2]], ))
+    #p3
+    f3 = []
+    l3 = []
+    p3 = multiprocessing.Process(target=get_features, args=([pics[3]],f3,l3,[ids[3]], ))
+    #p4
+    f4 = []
+    l4 = []
+    p4 = multiprocessing.Process(target=get_features, args=([pics[4]],f4,l4,[ids[4]], ))
+    #p5
+    f5 = []
+    l5 = []
+    p5 = multiprocessing.Process(target=get_features, args=([pics[5]],f5,l5,[ids[5]], ))
+    p0.start()
+    p1.start()
+    p2.start()
+    p3.start()
+    p4.start()
+    p5.start()
+    p0.join()
+    p1.join()
+    p2.join()
+    p3.join()
+    p4.join()
+    p5.join()
+    features = f0 + f1 + f2 + f3 + f4 + f5
+    labels   = l0 + l1 + l2 + l3 + l4 + l5 
+    #get_features(pics,features,labels,ids)
     features = np.array(features)
     labels = np.array(labels)
 
