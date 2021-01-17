@@ -60,10 +60,8 @@ def preprocessing(gray_img):
     thresh, bin_img = cv.threshold(gray_img, 0, 255, cv.THRESH_BINARY_INV|cv.THRESH_OTSU)
     gray_img, bin_img = get_paragraph(gray_img, bin_img)
     thresh, bin_img = cv.threshold(gray_img, 0, 255, cv.THRESH_BINARY_INV|cv.THRESH_OTSU)
-#     plt.imshow(bin_img)
     hist = cv.reduce(bin_img,1, cv.REDUCE_AVG).reshape(-1)
-#     for i in range(len(hist)):
-#         print(i, hist[i])
+
     th = 5
     H,W = bin_img.shape[:2]
     uppers = []
@@ -83,7 +81,6 @@ def preprocessing(gray_img):
     if hist[len(hist)-1] > th:
         lowers.append(len(hist)-1)
 
-#     img = cv.cvtColor(gray_img, cv.COLOR_GRAY2BGR)
     
     lines = []
     bin_lines = []
@@ -96,13 +93,8 @@ def preprocessing(gray_img):
         else:
             temp_uppers.remove(uppers[i])
             temp_lowers.remove(lowers[i])
-#     print(temp_uppers)
-#     print(temp_lowers)
 
     count = 1
-#     for l in bin_lines:
-#         cv.imwrite("line" + str(count) + ".png", l)
-#         count+=1
     
     return lines, bin_lines
 
@@ -136,30 +128,20 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         normalizedHist = minmax_scale(LBPHist)
         normalizeTime += time.time() - start
         
-        #normalizedHist = LBPHist/np.mean(LBPHist)
-        # print(normalizedHist[:,0][:3])
-        # showHist(normalizedHist)
         features.append(normalizedHist[:,0])
         labels.append(label)
-        #plot histogram
-        # plt.hist(normalizedHist, bins=256)
-        # name = "Image_"+str(counterww) + ".png"
-        # plt.savefig(os.path.join("Images",name))
-        # counterww =  counterww + 1
-        # plt.show()
+      
 
-def get_features(pics,features,labels,ids, return_features = None,return_Labels =None,num = None):
-    for i in range(len(pics)):
-        gray_img = cv.cvtColor(pics[i], cv.COLOR_BGR2GRAY)
-        lines,bin_lines = preprocessing(gray_img)
-        LBP_feature_extraction(lines,bin_lines, features, labels, ids[i])
-    # print(features)
+def get_features(pic,features,labels,id, return_features = None,return_Labels =None,num = None):
+    gray_img = cv.cvtColor(pic, cv.COLOR_BGR2GRAY)
+    lines,bin_lines = preprocessing(gray_img)
+    LBP_feature_extraction(lines,bin_lines, features, labels, id)
+    
     if return_features is not None:
         return_features[num] = features
         return_Labels[num] = labels
     
-    # print("ID of process running: {}  with features {}".format(os.getpid() , len(features))) 
-
+   
 def train_using_svm(features,labels):
     clf = svm.SVC(kernel='linear'  ,C=5.0) # Linear Kernel
     clf.fit(features, labels)
@@ -172,17 +154,12 @@ def naive_Bayes(features,labels):
  
 
 def KNN(features,labels):
-    knn = KNeighborsClassifier(n_neighbors = 5).fit(features, labels) 
+    knn = KNeighborsClassifier(n_neighbors = 3).fit(features, labels) 
     return knn
 
 
-def testing(clf,testImage,ids):
-    trainF = []
-    trainLabels = []
-    testPic = [testImage]
-    get_features(testPic,trainF,trainLabels,ids)
-    trainF = np.array(trainF)
-    trainLabels = np.array(trainLabels)
+def testing(clf,features,ids):
+    trainF = np.array(features)
     y_pred = clf.predict(trainF)
     # print(y_pred)
     # print("Most frequent value in the above array:") 
@@ -206,8 +183,6 @@ def runTests(num,return_features,return_Labels):
         for file in files:
             picsPath.append(os.path.join(dirpath,file))
 
-    # print(picsPath)
-    # print(testPath)
     testId = []
     with open(os.path.join(rootDir,"results.txt")) as fp: 
         Lines = fp.readlines() 
@@ -218,89 +193,66 @@ def runTests(num,return_features,return_Labels):
 
     print("Test case num {} belongs to writer {} ".format(num,testId))
 
-    ids = [1,1,2,2,3,3]
+    ids = [1,1,2,2,3,3,-1]
     #read all images
     pics = []
     for i in range(len(picsPath)):
         img = cv.imread(picsPath[i])
         pics.append(img)
     testImage =  cv.imread(testPath)
+    pics.append(testImage)
 
     # start Time 
     start = time.time()
 
     #create data and train model
-    #open 6 processes
-    #p0
-    f0 = []
-    l0 = []
-    p0 = threading.Thread(target=get_features, args=([pics[0]],f0,l0,[ids[0]],return_features,return_Labels,0 ))
-    #p1
-    f1 = []
-    l1 = []
-    p1 = threading.Thread(target=get_features, args=([pics[1]],f1,l1,[ids[1]],return_features,return_Labels,1 ))
-    #p2
-    f2 = []
-    l2 = []
-    p2 = threading.Thread(target=get_features, args=([pics[2]],f2,l2,[ids[2]],return_features,return_Labels,2 ))
-    #p3
-    f3 = []
-    l3 = []
-    p3 = threading.Thread(target=get_features, args=([pics[3]],f3,l3,[ids[3]],return_features,return_Labels,3 ))
-    #p4
-    f4 = []
-    l4 = []
-    p4 = threading.Thread(target=get_features, args=([pics[4]],f4,l4,[ids[4]],return_features,return_Labels,4 ))
-    #p5
-    f5 = []
-    l5 = []
-    p5 = threading.Thread(target=get_features, args=([pics[5]],f5,l5,[ids[5]],return_features,return_Labels ,5))
-    p0.start()
-    p1.start()
-    p2.start()
-    p3.start()
-    p4.start()
-    p5.start()
-    p0.join()
-    p1.join()
-    p2.join()
-    p3.join()
-    p4.join()
-    p5.join()
-    
+    #open 6 threads 
+    # Create new threads
+    threadList = [i for i in range (0,7)]
+    threads = []
+    for tName in threadList:
+        f = []
+        l = []
+        thread = threading.Thread(target=get_features, args=(pics[tName],f,l,ids[tName],return_features,return_Labels,tName ))
+        thread.start()
+        threads.append(thread)
+
+    # Wait for all threads to complete
+    for t in threads:
+        t.join()
+
     for i in range(6):
         features.extend(return_features[i])
         labels.extend(return_Labels[i])
-    # print(features)
-    # print("""""""""""""""""""""""""""""""""""")
-
-    #get_features(pics,features,labels,ids)
+  
     features = np.array(features)
     labels = np.array(labels)
-    # print(features.shape , labels.shape)
+  
 
     # clf = train_using_svm(features,labels)
     # clf = naive_Bayes(features,labels)
     clf = KNN(features,labels)
     
     #test model
-    result = testing(clf,testImage,testId)
+    result = testing(clf,return_features[6],testId)
     # end time
     end = time.time()
     dur = end-start
-    # print("test case took {} sec".format(dur))
+    if result == 0:
+        print("test case failed")
     return result ,dur
 
 
 
-if __name__ == "__main__": 
+def runMultiple(num ):
+
     # printing main program process id 
     # print("ID of main process: {}".format(os.getpid())) 
     manager = multiprocessing.Manager()
     return_features = manager.dict()
     return_Labels = manager.dict()
     
-    testCasesNum = 10
+    testCasesNum = num
     skip = 0
     totalAcc = 0
     totalTime = 0
@@ -314,9 +266,10 @@ if __name__ == "__main__":
     print("Average accuracy ... = ",totalAcc/testCasesNum)
     print("Average time ... = ",totalTime/testCasesNum)
 
-    # acc , ti = runTests(str(48))
 
-    print(lbpTime)
-    print(lbpHist)
-    print(normalizeTime)
+if __name__ == "__main__":
+
+    runMultiple(5)
+    
+
 
