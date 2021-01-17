@@ -2,13 +2,18 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import time
 # import commonfunctions
 from skimage import io, color
 from skimage.feature import local_binary_pattern
 from sklearn.preprocessing import minmax_scale
-# from commonfunctions import show_images, showHist
+from commonfunctions import show_images, showHist
 from sklearn import svm
 from sklearn import metrics
+from sklearn.naive_bayes import GaussianNB 
+from sklearn.neighbors import KNeighborsClassifier 
+
+counterww = 0
 
 def get_paragraph(gray_img, bin_img):
 
@@ -98,30 +103,47 @@ def preprocessing(gray_img):
     
     return lines, bin_lines
 
+lbpTime = 0
+lbpHist = 0
+normalizeTime = 0
+
 def LBP_feature_extraction(lines,bin_lines, features, labels, label):
+    global counterww
+    global lbpTime 
+    global lbpHist 
+    global normalizeTime
+
     R = 3
     P = 8
-    featureVectors = []
     for i in range(len(lines)):
         #rgb to grat scale
-        grayImage = cv.cvtColor(lines[i], cv.COLOR_BGR2GRAY)
+        # grayImage = cv.cvtColor(lines[i], cv.COLOR_BGR2GRAY)
         #calc PBL
-        LBPImage = local_binary_pattern(grayImage, P, R)
+        start = time.time()
+        LBPImage = local_binary_pattern(lines[i], P, R)
+        lbpTime += time.time() - start
         #change format for histogram function
         LBPImage = np.uint8(LBPImage)     
         #calculate the histogram
+        start = time.time()
         LBPHist = cv.calcHist([LBPImage],[0],bin_lines[i],[256],[0,256])
+        lbpHist += time.time() - start
         #normalize the histogram 0-1
+        start = time.time()
         normalizedHist = minmax_scale(LBPHist)
+        normalizeTime += time.time() - start
+        
         #normalizedHist = LBPHist/np.mean(LBPHist)
         #print(normalizedHist[:,0])
-        featureVectors.append(normalizedHist)
+        # showHist(normalizedHist)
         features.append(normalizedHist[:,0])
         labels.append(label)
         #plot histogram
-        #plt.hist(normalizedHist, bins=256)
-        #plt.show()
-    return featureVectors
+        # plt.hist(normalizedHist, bins=256)
+        # name = "Image_"+str(counterww) + ".png"
+        # plt.savefig(os.path.join("Images",name))
+        # counterww =  counterww + 1
+        # plt.show()
 
 def get_features(pics,features,labels,ids):
     for i in range(len(pics)):
@@ -130,9 +152,20 @@ def get_features(pics,features,labels,ids):
         LBP_feature_extraction(lines,bin_lines, features, labels, ids[i])
 
 def train_using_svm(features,labels):
-    clf = svm.SVC(kernel='linear') # Linear Kernel
+    clf = svm.SVC(kernel='linear'  ,C=5.0) # Linear Kernel
     clf.fit(features, labels)
     return clf
+
+
+def naive_Bayes(features,labels):
+    gnb = GaussianNB().fit(features, labels) 
+    return gnb
+ 
+
+def KNN(features,labels):
+    knn = KNeighborsClassifier(n_neighbors = 5).fit(features, labels) 
+    return knn
+
 
 def testing(clf,testImage,ids):
     trainF = []
@@ -156,10 +189,10 @@ def runTests(num):
     testCase = num
     testDir = os.path.join(rootDir,testCase)
     picsPath = []
-    testPath = []
+    testPath =""
     for dirpath, dirnames, files in os.walk(testDir):
         if dirpath == testDir:
-            testPath.append(os.path.join(dirpath,files[-1]))
+            testPath = os.path.join(dirpath,files[-1])
             continue
         for file in files:
             picsPath.append(os.path.join(dirpath,file))
@@ -174,7 +207,7 @@ def runTests(num):
                 testId.append(int(line[len(line)-2]))
                 break
 
-    print(testId)
+    print("Test case num {} belongs to writer {} ".format(num,testId))
 
     ids = [1,1,2,2,3,3]
     #read all images
@@ -183,18 +216,41 @@ def runTests(num):
         img = cv.imread(picsPath[i])
         pics.append(img)
     testImage =  cv.imread(testPath)
+
+    # start Time 
+    start = time.time()
+
     #create data and train model
     get_features(pics,features,labels,ids)
     features = np.array(features)
     labels = np.array(labels)
+
     clf = train_using_svm(features,labels)
+    # clf = naive_Bayes(features,labels)
+    #clf = KNN(features,labels)
     
     #test model
-    return testing(clf,testImage,testId)
+    result = testing(clf,testImage,testId)
+    # end time
+    end = time.time()
+    dur = end-start
+    # print("test case took {} sec".format(dur))
+    return result ,dur
 
-testCasesNum = 5
+
+testCasesNum = 500
 totalAcc = 0
+totalTime = 0
 for i in range(1,testCasesNum + 1):
-    totalAcc += runTests(str(i))
+    acc , ti = runTests(str(i))
+    totalAcc += acc 
+    totalTime += ti
 
-print("total accuracy ... = ",totalAcc/testCasesNum)
+print("Average accuracy ... = ",totalAcc/testCasesNum)
+print("Average time ... = ",totalTime/testCasesNum)
+
+# acc , ti = runTests(str(48))
+
+print(lbpTime)
+print(lbpHist)
+print(normalizeTime)

@@ -1,6 +1,5 @@
 import cv2
 import os
-from numba import jit, cuda , double
 import skimage.io as io
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,12 +13,7 @@ from matplotlib import cm
 import math
 
 
-# Convolution:
-from scipy.signal import convolve2d
-from scipy import fftpack
-from scipy.stats.stats import pearsonr
-from scipy.spatial import distance
-from scipy import stats
+
 import math
 
 from skimage.util import random_noise

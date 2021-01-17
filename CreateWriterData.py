@@ -167,6 +167,6 @@ def GenerateTestCases(numTest = 1 , type = 1):
 #dataBases = ["../formsA-D","../formsE-H"]
 #generateWritersFolders(dataBases)
 
-GenerateTestCases(50,0) # generate 5 test Cases    
+GenerateTestCases(500) # generate 5 test Cases    
 
 # deleteWriters(2)  # to delete writes having 1 img only
