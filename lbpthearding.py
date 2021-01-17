@@ -301,9 +301,10 @@ if __name__ == "__main__":
     return_Labels = manager.list()
     
     testCasesNum = 10
+    skip = 10
     totalAcc = 0
     totalTime = 0
-    for i in range(1,testCasesNum + 1):
+    for i in range(1 + skip,testCasesNum + 1 + skip):
         return_features = []
         return_Labels = []
         acc , ti = runTests(str(i),return_features,return_Labels)
