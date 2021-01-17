@@ -135,7 +135,7 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         normalizeTime += time.time() - start
         
         #normalizedHist = LBPHist/np.mean(LBPHist)
-        #print(normalizedHist[:,0])
+        # print(normalizedHist[:,0][:3])
         # showHist(normalizedHist)
         features.append(normalizedHist[:,0])
         labels.append(label)
@@ -146,11 +146,17 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         # counterww =  counterww + 1
         # plt.show()
 
-def get_features(pics,features,labels,ids):
+def get_features(pics,features,labels,ids, return_features = None,return_Labels =None):
     for i in range(len(pics)):
         gray_img = cv.cvtColor(pics[i], cv.COLOR_BGR2GRAY)
         lines,bin_lines = preprocessing(gray_img)
         LBP_feature_extraction(lines,bin_lines, features, labels, ids[i])
+    # print(features)
+    if return_features is not None:
+        return_features.extend(features)
+        return_Labels.extend(labels)
+    
+    # print("ID of process running: {}  with features {}".format(os.getpid() , len(features))) 
 
 def train_using_svm(features,labels):
     clf = svm.SVC(kernel='linear'  ,C=5.0) # Linear Kernel
@@ -177,12 +183,12 @@ def testing(clf,testImage,ids):
     trainLabels = np.array(trainLabels)
     y_pred = clf.predict(trainF)
     print(y_pred)
-    print("Most frequent value in the above array:") 
+    # print("Most frequent value in the above array:") 
     print(np.bincount(y_pred).argmax())
-    print("Accuracy:",metrics.accuracy_score(trainLabels, y_pred),"\n")
+    # print("Accuracy:",metrics.accuracy_score(trainLabels, y_pred),"\n")
     return 1 if np.bincount(y_pred).argmax() == ids[0] else 0
 
-def runTests(num):
+def runTests(num,return_features,return_Labels):
 
     features = []
     labels = []
@@ -223,30 +229,12 @@ def runTests(num):
 
     #create data and train model
     #open 6 processes
-    #p0
-    f0 = []
-    l0 = []
-    p0 = multiprocessing.Process(target=get_features, args=([pics[0]],f0,l0,[ids[0]], ))
-    #p1
-    f1 = []
-    l1 = []
-    p1 = multiprocessing.Process(target=get_features, args=([pics[1]],f1,l1,[ids[1]], ))
-    #p2
-    f2 = []
-    l2 = []
-    p2 = multiprocessing.Process(target=get_features, args=([pics[2]],f2,l2,[ids[2]], ))
-    #p3
-    f3 = []
-    l3 = []
-    p3 = multiprocessing.Process(target=get_features, args=([pics[3]],f3,l3,[ids[3]], ))
-    #p4
-    f4 = []
-    l4 = []
-    p4 = multiprocessing.Process(target=get_features, args=([pics[4]],f4,l4,[ids[4]], ))
-    #p5
-    f5 = []
-    l5 = []
-    p5 = multiprocessing.Process(target=get_features, args=([pics[5]],f5,l5,[ids[5]], ))
+    p0 = multiprocessing.Process(target=get_features, args=([pics[0]],f0,l0,[ids[0]],return_features,return_Labels ))
+    p1 = multiprocessing.Process(target=get_features, args=([pics[1]],f1,l1,[ids[1]],return_features,return_Labels ))
+    p2 = multiprocessing.Process(target=get_features, args=([pics[2]],f2,l2,[ids[2]],return_features,return_Labels ))
+    p3 = multiprocessing.Process(target=get_features, args=([pics[3]],f3,l3,[ids[3]],return_features,return_Labels ))
+    p4 = multiprocessing.Process(target=get_features, args=([pics[4]],f4,l4,[ids[4]],return_features,return_Labels ))
+    p5 = multiprocessing.Process(target=get_features, args=([pics[5]],f5,l5,[ids[5]],return_features,return_Labels ))
     p0.start()
     p1.start()
     p2.start()
@@ -259,15 +247,21 @@ def runTests(num):
     p3.join()
     p4.join()
     p5.join()
-    features = f0 + f1 + f2 + f3 + f4 + f5
-    labels   = l0 + l1 + l2 + l3 + l4 + l5 
+    
+    features = return_features
+    labels = return_Labels
+    # print(features)
+    # print("""""""""""""""""""""""""""""""""""")
+    # print(labels)
+
     #get_features(pics,features,labels,ids)
     features = np.array(features)
     labels = np.array(labels)
+    # print(features.shape , labels.shape)
 
-    clf = train_using_svm(features,labels)
+    # clf = train_using_svm(features,labels)
     # clf = naive_Bayes(features,labels)
-    #clf = KNN(features,labels)
+    clf = KNN(features,labels)
     
     #test model
     result = testing(clf,testImage,testId)
@@ -278,19 +272,28 @@ def runTests(num):
     return result ,dur
 
 
-testCasesNum = 500
-totalAcc = 0
-totalTime = 0
-for i in range(1,testCasesNum + 1):
-    acc , ti = runTests(str(i))
-    totalAcc += acc 
-    totalTime += ti
 
-print("Average accuracy ... = ",totalAcc/testCasesNum)
-print("Average time ... = ",totalTime/testCasesNum)
+if __name__ == "__main__": 
+    # printing main program process id 
+    print("ID of main process: {}".format(os.getpid())) 
+    manager = multiprocessing.Manager()
+    return_features = manager.list()
+    return_Labels = manager.list()
+    
+    testCasesNum = 1
+    totalAcc = 0
+    totalTime = 0
+    for i in range(1,testCasesNum + 1):
+        acc , ti = runTests(str(i),return_features,return_Labels)
+        totalAcc += acc 
+        totalTime += ti
 
-# acc , ti = runTests(str(48))
+    print("Average accuracy ... = ",totalAcc/testCasesNum)
+    print("Average time ... = ",totalTime/testCasesNum)
 
-print(lbpTime)
-print(lbpHist)
-print(normalizeTime)
+    # acc , ti = runTests(str(48))
+
+    print(lbpTime)
+    print(lbpHist)
+    print(normalizeTime)
+

@@ -4,3 +4,4 @@ Writers
 .vscode/settings.json
 *.pyc
 __pycache__/*
+TestProcessing.py
