@@ -7,6 +7,7 @@ from sklearn.neighbors import KNeighborsClassifier
 import time
 from Line_Seg import *
 import os
+from sklearn.preprocessing import minmax_scale
 #get the neighbours in a list by moving clockwise
 def getNeighbours(pointCoord):
     neighboursCoord = []
@@ -63,13 +64,13 @@ def getFeatureVector(img):
     #endTime = time.time()
     #print("time = ",startTime-endTime)
     allFeatures = []
+    featureVector = []
     for k in range(GLCM_Matrix.shape[3]):
-        featureVector = []
         for i in range(GLCM_Matrix.shape[0]):
             for j in range(GLCM_Matrix.shape[1]):
                 featureVector.append(GLCM_Matrix[i][j][0][k])
-        allFeatures.append(featureVector)
-    endTime = time.time()
+        #allFeatures.append(featureVector)
+    #endTime = time.time()
     #print("time = ",endTime - startTime)
     return featureVector
 
@@ -106,28 +107,35 @@ def runTests(num):
     labels = []
     #print(len(picsPath))
     
+    totatTime = 0
     for i in range(len(picsPath)):
         img = cv.imread(picsPath[i])
+        startTime = time.time()
         gray_img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         lines,bin_lines = preprocessing(gray_img)
         #print(lines)
         #start = time.time()
         #print(len(lines))
         for line in lines:
-            line = line/255
+            line = minmax_scale(line)
+            #print(line)
             lineFeature = getFeatureVector(line)
-            features.append(lineFeature)
+            #print(len(lineFeature))
+            features.append(minmax_scale(lineFeature))
             labels.append(ids[i])
-        #print(labels)
+        endTime = time.time()
+        totatTime += endTime - startTime
     testImage =  cv.imread(testPath)
+    
+    startTime = time.time()
     gray_img = cv.cvtColor(testImage, cv.COLOR_BGR2GRAY)
     lines,bin_lines = preprocessing(gray_img)
     
     testFeatures = []
     for line in lines:
-        line = line/255
+        line = minmax_scale(line)
         lineFeature = getFeatureVector(line)
-        testFeatures.append(lineFeature)
+        testFeatures.append(minmax_scale(lineFeature))
     KNN = KNeighborsClassifier(n_neighbors=10)
     KNN.fit(features,labels)
     predicted_Label = KNN.predict(testFeatures)
@@ -135,11 +143,14 @@ def runTests(num):
     #print(testId)
     #print(np.bincount(predicted_Label))
     #print(np.bincount(predicted_Label).argmax())
+    endTime = time.time()
+    totatTime += endTime - startTime
+    print("total time = ",totatTime)
     if np.bincount(predicted_Label).argmax() == testId[0]:
         return 1
     else:
         return 0
-
+    
 
 accuracy = 0
 for iter in range(50):
