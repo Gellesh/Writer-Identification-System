@@ -148,15 +148,15 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         # counterww =  counterww + 1
         # plt.show()
 
-def get_features(pics,features,labels,ids, return_features = None,return_Labels =None):
+def get_features(pics,features,labels,ids, return_features = None,return_Labels =None,num = None):
     for i in range(len(pics)):
         gray_img = cv.cvtColor(pics[i], cv.COLOR_BGR2GRAY)
         lines,bin_lines = preprocessing(gray_img)
         LBP_feature_extraction(lines,bin_lines, features, labels, ids[i])
     # print(features)
     if return_features is not None:
-        return_features.extend(features)
-        return_Labels.extend(labels)
+        return_features[num] = features
+        return_Labels[num] = labels
     
     # print("ID of process running: {}  with features {}".format(os.getpid() , len(features))) 
 
@@ -234,27 +234,27 @@ def runTests(num,return_features,return_Labels):
     #p0
     f0 = []
     l0 = []
-    p0 = threading.Thread(target=get_features, args=([pics[0]],f0,l0,[ids[0]],return_features,return_Labels ))
+    p0 = threading.Thread(target=get_features, args=([pics[0]],f0,l0,[ids[0]],return_features,return_Labels,0 ))
     #p1
     f1 = []
     l1 = []
-    p1 = threading.Thread(target=get_features, args=([pics[1]],f1,l1,[ids[1]],return_features,return_Labels ))
+    p1 = threading.Thread(target=get_features, args=([pics[1]],f1,l1,[ids[1]],return_features,return_Labels,1 ))
     #p2
     f2 = []
     l2 = []
-    p2 = threading.Thread(target=get_features, args=([pics[2]],f2,l2,[ids[2]],return_features,return_Labels ))
+    p2 = threading.Thread(target=get_features, args=([pics[2]],f2,l2,[ids[2]],return_features,return_Labels,2 ))
     #p3
     f3 = []
     l3 = []
-    p3 = threading.Thread(target=get_features, args=([pics[3]],f3,l3,[ids[3]],return_features,return_Labels ))
+    p3 = threading.Thread(target=get_features, args=([pics[3]],f3,l3,[ids[3]],return_features,return_Labels,3 ))
     #p4
     f4 = []
     l4 = []
-    p4 = threading.Thread(target=get_features, args=([pics[4]],f4,l4,[ids[4]],return_features,return_Labels ))
+    p4 = threading.Thread(target=get_features, args=([pics[4]],f4,l4,[ids[4]],return_features,return_Labels,4 ))
     #p5
     f5 = []
     l5 = []
-    p5 = threading.Thread(target=get_features, args=([pics[5]],f5,l5,[ids[5]],return_features,return_Labels ))
+    p5 = threading.Thread(target=get_features, args=([pics[5]],f5,l5,[ids[5]],return_features,return_Labels ,5))
     p0.start()
     p1.start()
     p2.start()
@@ -268,11 +268,11 @@ def runTests(num,return_features,return_Labels):
     p4.join()
     p5.join()
     
-    features = return_features
-    labels = return_Labels
+    for i in range(6):
+        features.extend(return_features[i])
+        labels.extend(return_Labels[i])
     # print(features)
     # print("""""""""""""""""""""""""""""""""""")
-    # print(labels)
 
     #get_features(pics,features,labels,ids)
     features = np.array(features)
@@ -297,16 +297,16 @@ if __name__ == "__main__":
     # printing main program process id 
     # print("ID of main process: {}".format(os.getpid())) 
     manager = multiprocessing.Manager()
-    return_features = manager.list()
-    return_Labels = manager.list()
+    return_features = manager.dict()
+    return_Labels = manager.dict()
     
     testCasesNum = 10
     skip = 10
     totalAcc = 0
     totalTime = 0
     for i in range(1 + skip,testCasesNum + 1 + skip):
-        return_features = []
-        return_Labels = []
+        return_features = {}
+        return_Labels = {}
         acc , ti = runTests(str(i),return_features,return_Labels)
         totalAcc += acc 
         totalTime += ti
