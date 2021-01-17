@@ -132,7 +132,9 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         labels.append(label)
       
 
-def get_features(pic,features,labels,id, return_features = None,return_Labels =None,num = None):
+def get_features(pic,id, return_features = None,return_Labels =None,num = None):
+    features = []
+    labels = []
     gray_img = cv.cvtColor(pic, cv.COLOR_BGR2GRAY)
     lines,bin_lines = preprocessing(gray_img)
     LBP_feature_extraction(lines,bin_lines, features, labels, id)
@@ -213,7 +215,7 @@ def runTests(num,return_features,return_Labels):
     for tName in threadList:
         f = []
         l = []
-        thread = threading.Thread(target=get_features, args=(pics[tName],f,l,ids[tName],return_features,return_Labels,tName ))
+        thread = threading.Thread(target=get_features, args=(pics[tName],ids[tName],return_features,return_Labels,tName ))
         thread.start()
         threads.append(thread)
 
@@ -228,7 +230,6 @@ def runTests(num,return_features,return_Labels):
     features = np.array(features)
     labels = np.array(labels)
   
-
     # clf = train_using_svm(features,labels)
     # clf = naive_Bayes(features,labels)
     clf = KNN(features,labels)
