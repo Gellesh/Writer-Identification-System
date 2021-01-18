@@ -124,7 +124,7 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         LBPImage = local_binary_pattern(lines[i], P, R)
         lbpTime += time.time() - start
         #change format for histogram function
-        LBPImage = np.uint8(LBPImage)     
+        LBPImage = np.uint8(LBPImage)
         #calculate the histogram
         start = time.time()
         LBPHist = cv.calcHist([LBPImage],[0],bin_lines[i],[256],[0,256])
@@ -145,6 +145,8 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         # plt.savefig(os.path.join("Images",name))
         # counterww =  counterww + 1
         # plt.show()
+    print(features)
+    print(labels)
 
 def get_features(pics,features,labels,ids):
     for i in range(len(pics)):
@@ -181,6 +183,8 @@ def testing(clf,testImage,ids):
     print(np.bincount(y_pred).argmax())
     print("Accuracy:",metrics.accuracy_score(trainLabels, y_pred),"\n")
     return 1 if np.bincount(y_pred).argmax() == ids[0] else 0
+
+
 
 def runTests(num):
 
@@ -264,16 +268,18 @@ def runTests(num):
     #get_features(pics,features,labels,ids)
     features = np.array(features)
     labels = np.array(labels)
-
-    clf = train_using_svm(features,labels)
+    print(features)
+    print(labels)
+    #clf = train_using_svm(features,labels)
     # clf = naive_Bayes(features,labels)
     #clf = KNN(features,labels)
     
     #test model
-    result = testing(clf,testImage,testId)
+    #result = testing(clf,testImage,testId)
     # end time
     end = time.time()
     dur = end-start
+    result = 0
     # print("test case took {} sec".format(dur))
     return result ,dur
 
@@ -281,7 +287,7 @@ def runTests(num):
 testCasesNum = 500
 totalAcc = 0
 totalTime = 0
-for i in range(1,testCasesNum + 1):
+for i in range(1,1 + 1):
     acc , ti = runTests(str(i))
     totalAcc += acc 
     totalTime += ti
