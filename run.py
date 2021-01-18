@@ -200,9 +200,7 @@ def test_set(folderPath = "Test Set Sample"):
 
 
 if __name__ == "__main__":
-
-    # runMultiple(500)
-    run_multiple(5)
+    run_multiple(500)
     
 
     
