@@ -12,10 +12,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import math
 
-
-
-import math
-
 from skimage.util import random_noise
 from skimage.filters import median
 from skimage.feature import canny

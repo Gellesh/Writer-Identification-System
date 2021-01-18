@@ -1,164 +1,10 @@
-import cv2 as cv
-import numpy as np
 import matplotlib.pyplot as plt
 import os
 import time
-# import commonfunctions
-from skimage import io, color
-from skimage.feature import local_binary_pattern
-from sklearn.preprocessing import minmax_scale
-#from commonfunctions import show_images, showHist
-from sklearn import svm
-from sklearn import metrics
-from sklearn.naive_bayes import GaussianNB 
-from sklearn.neighbors import KNeighborsClassifier 
-import threading
-import multiprocessing 
+from Classifiers import *
+from featureExtraction import *
 
-
-counterww = 0
-
-def get_paragraph(gray_img, bin_img):
-
-    height, width = gray_img.shape
-
-    contours, hierarchy = cv.findContours(bin_img, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-
-    threshold_width = 1500
-
-
-    up, down, left, right = 0, height - 1, 0, width - 1
-
-    for cnt in contours:
-        x, y, w, h = cv.boundingRect(cnt)
-
-        if w < threshold_width:
-            continue
-
-        if y < height / 2:
-            if y > up:
-                up = y
-        else:
-            down = y
-
-    th = 0
-    bin_img = bin_img[up:down + 1, left:right + 1]
-    gray_img = gray_img[up:down + 1, left:right + 1]
-    # Apply erosion to remove noise and dots.
-    kernel = np.ones((3, 3), np.uint8)
-    bin_img = cv.erode(bin_img, kernel, iterations=3)
-    pts = np.nonzero(bin_img)
-    x_min, y_min, x_max, y_max = min(pts[0]), min(pts[1]), max(pts[0]), max(pts[1])
-    bin_img = bin_img[x_min-th:x_max+th, y_min-th:y_max+th]
-    gray_img = gray_img[x_min-th:x_max+th, y_min-th:y_max+th]
-    # Return the handwritten paragraph
-    return gray_img, bin_img
-
-def preprocessing(gray_img):
-    gray_img = cv.GaussianBlur(gray_img, (5, 5), 0)
-    ## (2) threshold
-    thresh, bin_img = cv.threshold(gray_img, 0, 255, cv.THRESH_BINARY_INV|cv.THRESH_OTSU)
-    gray_img, bin_img = get_paragraph(gray_img, bin_img)
-    thresh, bin_img = cv.threshold(gray_img, 0, 255, cv.THRESH_BINARY_INV|cv.THRESH_OTSU)
-    hist = cv.reduce(bin_img,1, cv.REDUCE_AVG).reshape(-1)
-
-    th = 5
-    H,W = bin_img.shape[:2]
-    uppers = []
-    lowers = []
-    if hist[0] > th:
-        uppers.append(0)
-    
-     
-    for y in range(H-1):
-        if hist[y]<=th and hist[y+1]>th:
-            uppers.append(y)
-     
-    for y in range(H-1):
-        if hist[y]>th and hist[y+1]<=th:
-            lowers.append(y)
-            
-    if hist[len(hist)-1] > th:
-        lowers.append(len(hist)-1)
-
-    
-    lines = []
-    bin_lines = []
-    temp_uppers = uppers.copy()
-    temp_lowers = lowers.copy()
-    for i in range(len(uppers)):
-        if lowers[i] - uppers[i] > 30:
-            lines.append(gray_img[uppers[i]:lowers[i], :])
-            bin_lines.append(bin_img[uppers[i]:lowers[i], :])
-        else:
-            temp_uppers.remove(uppers[i])
-            temp_lowers.remove(lowers[i])
-
-    count = 1
-    
-    return lines, bin_lines
-
-lbpTime = 0
-lbpHist = 0
-normalizeTime = 0
-
-def LBP_feature_extraction(lines,bin_lines, features, labels, label):
-    global counterww
-    global lbpTime 
-    global lbpHist 
-    global normalizeTime
-
-    R = 3
-    P = 8
-    for i in range(len(lines)):
-        #rgb to grat scale
-        # grayImage = cv.cvtColor(lines[i], cv.COLOR_BGR2GRAY)
-        #calc PBL
-        start = time.time()
-        LBPImage = local_binary_pattern(lines[i], P, R)
-        lbpTime += time.time() - start
-        #change format for histogram function
-        LBPImage = np.uint8(LBPImage)     
-        #calculate the histogram
-        start = time.time()
-        LBPHist = cv.calcHist([LBPImage],[0],bin_lines[i],[256],[0,256])
-        lbpHist += time.time() - start
-        #normalize the histogram 0-1
-        start = time.time()
-        normalizedHist = minmax_scale(LBPHist)
-        normalizeTime += time.time() - start
-        
-        features.append(normalizedHist[:,0])
-        labels.append(label)
-      
-
-def get_features(pic,id, return_features = None,return_Labels =None,num = None):
-    features = []
-    labels = []
-    gray_img = cv.cvtColor(pic, cv.COLOR_BGR2GRAY)
-    lines,bin_lines = preprocessing(gray_img)
-    LBP_feature_extraction(lines,bin_lines, features, labels, id)
-    
-    if return_features is not None:
-        return_features[num] = features
-        return_Labels[num] = labels
-    
-   
-def train_using_svm(features,labels):
-    clf = svm.SVC(kernel='linear'  ,C=5.0) # Linear Kernel
-    clf.fit(features, labels)
-    return clf
-
-
-def naive_Bayes(features,labels):
-    gnb = GaussianNB().fit(features, labels) 
-    return gnb
- 
-
-def KNN(features,labels):
-    knn = KNeighborsClassifier(n_neighbors = 3).fit(features, labels) 
-    return knn
-
+""" contains helper functions to test accuracy and sample test set"""
 
 def testing(clf,features,ids):
     trainF = np.array(features)
@@ -303,7 +149,6 @@ def get_result(num,return_features,return_Labels,rootDir):
 
     return result ,dur
 
-
 def run_multiple(num ):
 
     # printing main program process id 
@@ -325,7 +170,6 @@ def run_multiple(num ):
 
     print("Average accuracy ... = ",totalAcc/testCasesNum)
     print("Average time ... = ",totalTime/testCasesNum)
-
 
 def test_set(folderPath = "Test Set Sample"):
 
@@ -355,17 +199,10 @@ def test_set(folderPath = "Test Set Sample"):
     time_file_object.close()
 
 
-
- 
-
-
-
-
-
 if __name__ == "__main__":
 
     # runMultiple(500)
-    test_set()
+    run_multiple(5)
     
 
     
