@@ -124,7 +124,7 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         LBPImage = local_binary_pattern(lines[i], P, R)
         lbpTime += time.time() - start
         #change format for histogram function
-        LBPImage = np.uint8(LBPImage)     
+        LBPImage = np.uint8(LBPImage)
         #calculate the histogram
         start = time.time()
         LBPHist = cv.calcHist([LBPImage],[0],bin_lines[i],[256],[0,256])
@@ -145,6 +145,8 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         # plt.savefig(os.path.join("Images",name))
         # counterww =  counterww + 1
         # plt.show()
+    print(features)
+    print(labels)
 
 def get_features(pics,features,labels,ids, return_features = None,return_Labels =None):
     for i in range(len(pics)):
@@ -282,10 +284,11 @@ def runTests(num,return_features,return_Labels):
     clf = KNN(features,labels)
     
     #test model
-    result = testing(clf,testImage,testId)
+    #result = testing(clf,testImage,testId)
     # end time
     end = time.time()
     dur = end-start
+    result = 0
     # print("test case took {} sec".format(dur))
     return result ,dur
 

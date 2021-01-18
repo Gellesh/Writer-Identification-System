@@ -7,6 +7,7 @@ from sklearn.neighbors import KNeighborsClassifier
 import time
 from Line_Seg import *
 import os
+from sklearn.preprocessing import minmax_scale
 #get the neighbours in a list by moving clockwise
 def getNeighbours(pointCoord):
     neighboursCoord = []
@@ -41,36 +42,35 @@ def CSP_LP(neighbours,N,Threshold):
     return CSP_LP_SUM
 
 def getFeatureVector(img):
-    GLCM_Input = []
-    startTime = time.time()
-    imgRows = img.shape[0]
+    GLCM_Input = [] #to store the CSLBP values
+    startTime = time.time() #start timer
+    #get image shapes
+    imgRows = img.shape[0] 
     imgCols = img.shape[1]
+    #loop on all pixels starting from the 1 row till the row before the last one and same for columns
     for i in range(1,imgRows - 1):
         GLCM_Row = []
         for j in range(1,imgCols - 1):
             neighbours = []
-            neighboursCoord = getNeighbours([i,j])
+            neighboursCoord = getNeighbours([i,j]) #get the pixels' neighbours coordinates
             for p in neighboursCoord:
                 x = p[0]
                 y = p[1]
-                neighbours.append(img[x][y])
-            CSP_LP_SUM = CSP_LP(neighbours,8,0.01)
-            GLCM_Row.append(CSP_LP_SUM)
-        GLCM_Input.append(GLCM_Row)
+                neighbours.append(img[x][y]) #get those neighbours from their coordinates
+            CSP_LP_SUM = CSP_LP(neighbours,8,0.01) #get the CSLBP value from those neighours
+            GLCM_Row.append(CSP_LP_SUM) #append the CSP_LP_SUM to the row of the GLCM list
+        GLCM_Input.append(GLCM_Row) #append the GLCM_ROW to the GLCM_Input
     
+    #initialize hte GLCM matrix with four directino = 0,45,90,135 with distance = 1 and levels = 16
     GLCM_Matrix = ski.greycomatrix(GLCM_Input,distances=[1],angles=[0,math.pi/4,
                                                     math.pi/2,math.pi*(5/4)],levels=16)
-    #endTime = time.time()
-    #print("time = ",startTime-endTime)
+    #get all the features by appending the 4 matrices into single feature vector
     allFeatures = []
+    featureVector = []
     for k in range(GLCM_Matrix.shape[3]):
-        featureVector = []
         for i in range(GLCM_Matrix.shape[0]):
             for j in range(GLCM_Matrix.shape[1]):
                 featureVector.append(GLCM_Matrix[i][j][0][k])
-        allFeatures.append(featureVector)
-    endTime = time.time()
-    #print("time = ",endTime - startTime)
     return featureVector
 
 def runTests(num):
@@ -104,42 +104,45 @@ def runTests(num):
     pics = []
     features = []
     labels = []
-    #print(len(picsPath))
     
+    totatTime = 0
     for i in range(len(picsPath)):
-        img = cv.imread(picsPath[i])
-        gray_img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        lines,bin_lines = preprocessing(gray_img)
-        #print(lines)
-        #start = time.time()
-        #print(len(lines))
+        img = cv.imread(picsPath[i]) #read the image number i
+        startTime = time.time()
+        gray_img = cv.cvtColor(img, cv.COLOR_BGR2GRAY) #convert it to gray scale
+        lines,bin_lines = preprocessing(gray_img) #get the grayscaled lines
         for line in lines:
-            line = line/255
-            lineFeature = getFeatureVector(line)
-            features.append(lineFeature)
-            labels.append(ids[i])
-        #print(labels)
+            line = minmax_scale(line) #normalize the line
+            lineFeature = getFeatureVector(line) #get the feature of the line
+            features.append(minmax_scale(lineFeature)) #append the feature of the line
+            labels.append(ids[i]) #append the label of the line
+        endTime = time.time()
+        totatTime += endTime - startTime
     testImage =  cv.imread(testPath)
+    
+    startTime = time.time()
     gray_img = cv.cvtColor(testImage, cv.COLOR_BGR2GRAY)
     lines,bin_lines = preprocessing(gray_img)
     
+    '''
+        get the features of the test image lines
+    '''
     testFeatures = []
     for line in lines:
-        line = line/255
+        line = minmax_scale(line)
         lineFeature = getFeatureVector(line)
-        testFeatures.append(lineFeature)
+        testFeatures.append(minmax_scale(lineFeature))
     KNN = KNeighborsClassifier(n_neighbors=10)
     KNN.fit(features,labels)
     predicted_Label = KNN.predict(testFeatures)
-    #print((predicted_Label))
-    #print(testId)
-    #print(np.bincount(predicted_Label))
-    #print(np.bincount(predicted_Label).argmax())
+    endTime = time.time()
+    totatTime += endTime - startTime
+    print("total time = ",totatTime)
     if np.bincount(predicted_Label).argmax() == testId[0]:
         return 1
     else:
         return 0
-
+    
 
 accuracy = 0
 for iter in range(50):
@@ -148,27 +151,3 @@ for iter in range(50):
 
 print(accuracy)
 print(accuracy/50)
-
-'''
-#read the image and convert to normalized grayscale
-img = cv.imread('../formsE-H/e01-014.png')
-gray_img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-#print(img)
-#print(img.shape)
-lines,bin_lines = preprocessing(gray_img)
-features = []
-labels = []
-#print(lines)
-start = time.time()
-for line in lines:
-    startTime = time.time()
-    print(line.shape)
-    line = line/255
-    endTime = time.time()
-    print(endTime-startTime)
-    print(line.shape)
-    lineFeature = getFeatureVector(line)
-    features.append(lineFeature)
-end = time.time()
-print(end-start)
-'''
