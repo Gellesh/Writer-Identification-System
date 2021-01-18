@@ -175,6 +175,7 @@ def test_set(folderPath = "Test Set Sample"):
 
     dataPath = os.path.join(folderPath,"data")
     tests = os.listdir(dataPath)
+    tests.sort(key=int)
     manager = multiprocessing.Manager()
     return_features = manager.dict()
     return_Labels = manager.dict()
@@ -200,8 +201,10 @@ def test_set(folderPath = "Test Set Sample"):
 
 
 if __name__ == "__main__":
-    run_multiple(500)
-    
+
+    # runMultiple(500)
+    #run_multiple(5)
+    test_set("Test Set Sample")
 
     
 
