@@ -7,12 +7,14 @@ import time
 from skimage import io, color
 from skimage.feature import local_binary_pattern
 from sklearn.preprocessing import minmax_scale
-from commonfunctions import show_images, showHist
+#from commonfunctions import show_images, showHist
 from sklearn import svm
 from sklearn import metrics
 from sklearn.naive_bayes import GaussianNB 
 from sklearn.neighbors import KNeighborsClassifier 
+import threading
 import multiprocessing 
+
 
 counterww = 0
 
@@ -58,11 +60,9 @@ def preprocessing(gray_img):
     thresh, bin_img = cv.threshold(gray_img, 0, 255, cv.THRESH_BINARY_INV|cv.THRESH_OTSU)
     gray_img, bin_img = get_paragraph(gray_img, bin_img)
     thresh, bin_img = cv.threshold(gray_img, 0, 255, cv.THRESH_BINARY_INV|cv.THRESH_OTSU)
-#     plt.imshow(bin_img)
     hist = cv.reduce(bin_img,1, cv.REDUCE_AVG).reshape(-1)
-#     for i in range(len(hist)):
-#         print(i, hist[i])
-    th = 2
+
+    th = 5
     H,W = bin_img.shape[:2]
     uppers = []
     lowers = []
@@ -81,26 +81,20 @@ def preprocessing(gray_img):
     if hist[len(hist)-1] > th:
         lowers.append(len(hist)-1)
 
-#     img = cv.cvtColor(gray_img, cv.COLOR_GRAY2BGR)
     
     lines = []
     bin_lines = []
     temp_uppers = uppers.copy()
     temp_lowers = lowers.copy()
     for i in range(len(uppers)):
-        if lowers[i] - uppers[i] > 50:
+        if lowers[i] - uppers[i] > 30:
             lines.append(gray_img[uppers[i]:lowers[i], :])
             bin_lines.append(bin_img[uppers[i]:lowers[i], :])
         else:
             temp_uppers.remove(uppers[i])
             temp_lowers.remove(lowers[i])
-#     print(temp_uppers)
-#     print(temp_lowers)
 
     count = 1
-#     for l in bin_lines:
-#         cv.imwrite("line" + str(count) + ".png", l)
-#         count+=1
     
     return lines, bin_lines
 
@@ -124,7 +118,7 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         LBPImage = local_binary_pattern(lines[i], P, R)
         lbpTime += time.time() - start
         #change format for histogram function
-        LBPImage = np.uint8(LBPImage)
+        LBPImage = np.uint8(LBPImage)     
         #calculate the histogram
         start = time.time()
         LBPHist = cv.calcHist([LBPImage],[0],bin_lines[i],[256],[0,256])
@@ -134,32 +128,22 @@ def LBP_feature_extraction(lines,bin_lines, features, labels, label):
         normalizedHist = minmax_scale(LBPHist)
         normalizeTime += time.time() - start
         
-        #normalizedHist = LBPHist/np.mean(LBPHist)
-        # print(normalizedHist[:,0][:3])
-        # showHist(normalizedHist)
         features.append(normalizedHist[:,0])
         labels.append(label)
-        #plot histogram
-        # plt.hist(normalizedHist, bins=256)
-        # name = "Image_"+str(counterww) + ".png"
-        # plt.savefig(os.path.join("Images",name))
-        # counterww =  counterww + 1
-        # plt.show()
-    print(features)
-    print(labels)
+      
 
-def get_features(pics,features,labels,ids, return_features = None,return_Labels =None):
-    for i in range(len(pics)):
-        gray_img = cv.cvtColor(pics[i], cv.COLOR_BGR2GRAY)
-        lines,bin_lines = preprocessing(gray_img)
-        LBP_feature_extraction(lines,bin_lines, features, labels, ids[i])
-    # print(features)
-    if return_features is not None:
-        return_features.extend(features)
-        return_Labels.extend(labels)
+def get_features(pic,id, return_features = None,return_Labels =None,num = None):
+    features = []
+    labels = []
+    gray_img = cv.cvtColor(pic, cv.COLOR_BGR2GRAY)
+    lines,bin_lines = preprocessing(gray_img)
+    LBP_feature_extraction(lines,bin_lines, features, labels, id)
     
-    # print("ID of process running: {}  with features {}".format(os.getpid() , len(features))) 
-
+    if return_features is not None:
+        return_features[num] = features
+        return_Labels[num] = labels
+    
+   
 def train_using_svm(features,labels):
     clf = svm.SVC(kernel='linear'  ,C=5.0) # Linear Kernel
     clf.fit(features, labels)
@@ -172,25 +156,20 @@ def naive_Bayes(features,labels):
  
 
 def KNN(features,labels):
-    knn = KNeighborsClassifier(n_neighbors = 5).fit(features, labels) 
+    knn = KNeighborsClassifier(n_neighbors = 3).fit(features, labels) 
     return knn
 
 
-def testing(clf,testImage,ids):
-    trainF = []
-    trainLabels = []
-    testPic = [testImage]
-    get_features(testPic,trainF,trainLabels,ids)
-    trainF = np.array(trainF)
-    trainLabels = np.array(trainLabels)
+def testing(clf,features,ids):
+    trainF = np.array(features)
     y_pred = clf.predict(trainF)
-    print(y_pred)
-    print("Most frequent value in the above array:") 
-    print(np.bincount(y_pred).argmax())
-    print("Accuracy:",metrics.accuracy_score(trainLabels, y_pred),"\n")
+    # print(y_pred)
+    # print("Most frequent value in the above array:") 
+    # print(np.bincount(y_pred).argmax())
+    # print("Accuracy:",metrics.accuracy_score(trainLabels, y_pred),"\n")
     return 1 if np.bincount(y_pred).argmax() == ids[0] else 0
 
-def runTests(num,return_features,return_Labels):
+def run_tests(num,return_features,return_Labels):
 
     features = []
     labels = []
@@ -206,8 +185,6 @@ def runTests(num,return_features,return_Labels):
         for file in files:
             picsPath.append(os.path.join(dirpath,file))
 
-    # print(picsPath)
-    # print(testPath)
     testId = []
     with open(os.path.join(rootDir,"results.txt")) as fp: 
         Lines = fp.readlines() 
@@ -218,105 +195,179 @@ def runTests(num,return_features,return_Labels):
 
     print("Test case num {} belongs to writer {} ".format(num,testId))
 
-    ids = [1,1,2,2,3,3]
+    ids = [1,1,2,2,3,3,-1]
     #read all images
     pics = []
     for i in range(len(picsPath)):
         img = cv.imread(picsPath[i])
         pics.append(img)
     testImage =  cv.imread(testPath)
+    pics.append(testImage)
 
     # start Time 
     start = time.time()
 
     #create data and train model
-    #open 6 processes
-    #p0
-    f0 = []
-    l0 = []
-    p0 = multiprocessing.Process(target=get_features, args=([pics[0]],f0,l0,[ids[0]],return_features,return_Labels ))
-    #p1
-    f1 = []
-    l1 = []
-    p1 = multiprocessing.Process(target=get_features, args=([pics[1]],f1,l1,[ids[1]],return_features,return_Labels ))
-    #p2
-    f2 = []
-    l2 = []
-    p2 = multiprocessing.Process(target=get_features, args=([pics[2]],f2,l2,[ids[2]],return_features,return_Labels ))
-    #p3
-    f3 = []
-    l3 = []
-    p3 = multiprocessing.Process(target=get_features, args=([pics[3]],f3,l3,[ids[3]],return_features,return_Labels ))
-    #p4
-    f4 = []
-    l4 = []
-    p4 = multiprocessing.Process(target=get_features, args=([pics[4]],f4,l4,[ids[4]],return_features,return_Labels ))
-    #p5
-    f5 = []
-    l5 = []
-    p5 = multiprocessing.Process(target=get_features, args=([pics[5]],f5,l5,[ids[5]],return_features,return_Labels ))
-    p0.start()
-    p1.start()
-    p2.start()
-    p3.start()
-    p4.start()
-    p5.start()
-    p0.join()
-    p1.join()
-    p2.join()
-    p3.join()
-    p4.join()
-    p5.join()
-    
-    features = return_features
-    labels = return_Labels
-    # print(features)
-    # print("""""""""""""""""""""""""""""""""""")
-    # print(labels)
+    #open 6 threads 
+    # Create new threads
+    threadList = [i for i in range (0,7)]
+    threads = []
+    for tName in threadList:
+        f = []
+        l = []
+        thread = threading.Thread(target=get_features, args=(pics[tName],ids[tName],return_features,return_Labels,tName ))
+        thread.start()
+        threads.append(thread)
 
-    #get_features(pics,features,labels,ids)
+    # Wait for all threads to complete
+    for t in threads:
+        t.join()
+
+    for i in range(6):
+        features.extend(return_features[i])
+        labels.extend(return_Labels[i])
+  
     features = np.array(features)
     labels = np.array(labels)
-    print(features.shape , labels.shape)
-
+  
     # clf = train_using_svm(features,labels)
     # clf = naive_Bayes(features,labels)
     clf = KNN(features,labels)
     
     #test model
-    #result = testing(clf,testImage,testId)
+    result = testing(clf,return_features[6],testId)
     # end time
     end = time.time()
     dur = end-start
-    result = 0
-    # print("test case took {} sec".format(dur))
+    if result == 0:
+        print("test case failed")
+    return result ,dur
+
+def get_result(num,return_features,return_Labels,rootDir):
+    features = []
+    labels = []
+    testCase = num
+    testDir = os.path.join(rootDir,testCase)
+    picsPath = []
+    for dirpath, dirnames, files in os.walk(testDir):
+        if dirpath == testDir:
+            testPath = os.path.join(dirpath,files[-1])
+            continue
+        for file in files:
+            picsPath.append(os.path.join(dirpath,file))
+
+    ids = [1,1,2,2,3,3,-1]
+    #read all images
+    pics = []
+    for i in range(len(picsPath)):
+        img = cv.imread(picsPath[i])
+        pics.append(img)
+    testImage =  cv.imread(testPath)
+    pics.append(testImage)
+
+    # start Time 
+    start = time.time()
+
+    #create data and train model
+    #open 6 threads 
+    # Create new threads
+    threadList = [i for i in range (0,7)]
+    threads = []
+    for tName in threadList:
+        f = []
+        l = []
+        thread = threading.Thread(target=get_features, args=(pics[tName],ids[tName],return_features,return_Labels,tName ))
+        thread.start()
+        threads.append(thread)
+
+    # Wait for all threads to complete
+    for t in threads:
+        t.join()
+
+    for i in range(6):
+        features.extend(return_features[i])
+        labels.extend(return_Labels[i])
+  
+    features = np.array(features)
+    labels = np.array(labels)
+
+    clf = KNN(features,labels)
+    
+    #test model
+    trainF = np.array(return_features[6])
+    y_pred = clf.predict(trainF)
+    result = np.bincount(y_pred).argmax()
+    # end time
+    end = time.time()
+    dur = end-start
+
     return result ,dur
 
 
+def run_multiple(num ):
 
-if __name__ == "__main__": 
     # printing main program process id 
-    print("ID of main process: {}".format(os.getpid())) 
+    # print("ID of main process: {}".format(os.getpid())) 
     manager = multiprocessing.Manager()
-    return_features = manager.list()
-    return_Labels = manager.list()
+    return_features = manager.dict()
+    return_Labels = manager.dict()
     
-    testCasesNum = 3
+    testCasesNum = num
+    skip = 0
     totalAcc = 0
     totalTime = 0
-    for i in range(1,testCasesNum + 1):
-        # return_features = []
-        # return_Labels = []
-        acc , ti = runTests(str(i),return_features,return_Labels)
+    for i in range(1 + skip,testCasesNum + 1 + skip):
+        return_features = {}
+        return_Labels = {}
+        acc , ti = run_tests(str(i),return_features,return_Labels)
         totalAcc += acc 
         totalTime += ti
 
     print("Average accuracy ... = ",totalAcc/testCasesNum)
     print("Average time ... = ",totalTime/testCasesNum)
 
-    # acc , ti = runTests(str(48))
 
-    print(lbpTime)
-    print(lbpHist)
-    print(normalizeTime)
+def test_set(folderPath = "Test Set Sample"):
+
+    dataPath = os.path.join(folderPath,"data")
+    tests = os.listdir(dataPath)
+    manager = multiprocessing.Manager()
+    return_features = manager.dict()
+    return_Labels = manager.dict()
+
+    writer_file_object = open(os.path.join(folderPath,"results.txt"), 'a')
+    time_file_object = open(os.path.join(folderPath,"time.txt"), 'a')
+
+
+    for test in tests:
+        writer , t = get_result(test,return_features,return_Labels,dataPath)
+
+        # Add results to results.txt
+        writer_file_object.write(str(writer) + "\n")
+
+        # Add results to time.txt
+        time_file_object.write(str(round(t,2)) + "\n")
+
+        return_features = {}
+        return_Labels = {}
+        
+    writer_file_object.close()
+    time_file_object.close()
+
+
+
+ 
+
+
+
+
+
+if __name__ == "__main__":
+
+    # runMultiple(500)
+    test_set()
+    
+
+    
+
 
