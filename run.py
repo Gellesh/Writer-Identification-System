@@ -3,6 +3,8 @@ import os
 import time
 from Classifiers import *
 from featureExtraction import *
+import sys 
+
 
 """ contains helper functions to test accuracy and sample test set"""
 
@@ -171,7 +173,7 @@ def run_multiple(num ):
     print("Average accuracy ... = ",totalAcc/testCasesNum)
     print("Average time ... = ",totalTime/testCasesNum)
 
-def test_set(folderPath = "Test Set Sample"):
+def test_set(folderPath = "TestSetSample"):
 
     dataPath = os.path.join(folderPath,"data")
     tests = os.listdir(dataPath)
@@ -202,9 +204,16 @@ def test_set(folderPath = "Test Set Sample"):
 
 if __name__ == "__main__":
 
+    argument = sys.argv
+
+    if len(argument) == 1 :
+        print("No path is entered please run again and enter TestSet path \n")
+    else:
+        test_set(argument[1])
+
     # runMultiple(500)
     #run_multiple(5)
-    test_set("Test Set Sample")
+    # test_set("Test Set Sample")
 
     
 

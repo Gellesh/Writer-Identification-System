@@ -6,3 +6,5 @@ Writers
 __pycache__/*
 TestProcessing.py
 Test Set Sample
+TestSetSample/results.txt
+TestSetSample/time.txt
