@@ -182,6 +182,9 @@ def test_set(folderPath = "TestSetSample"):
     return_features = manager.dict()
     return_Labels = manager.dict()
 
+    #create files if they don't exist
+    #open(os.path.join(folderPath,"results.txt"),'w+')
+    #open(os.path.join(folderPath,"time.txt"),'w+')
     writer_file_object = open(os.path.join(folderPath,"results.txt"), 'a')
     time_file_object = open(os.path.join(folderPath,"time.txt"), 'a')
 
@@ -205,7 +208,7 @@ def test_set(folderPath = "TestSetSample"):
 if __name__ == "__main__":
 
     argument = sys.argv
-
+    
     if len(argument) == 1 :
         print("No path is entered please run again and enter TestSet path \n")
     else:
